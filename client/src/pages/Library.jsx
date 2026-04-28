@@ -1,0 +1,517 @@
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { toast, Toaster } from "react-hot-toast";
+import {
+  Search,
+  Plus,
+  Play,
+  Trash2,
+  X,
+  Loader2,
+  Edit2,
+  Check,
+} from "lucide-react";
+import { Sidebar } from "../components/Sidebar";
+import { Player } from "../components/Player";
+import { usePlayer } from "../context/PlayerContext";
+import { useSidebar } from "../context/SidebarContext";
+import { API_BASE_URL } from "../config";
+
+export const Library = () => {
+  const { playSong } = usePlayer();
+  const [playlists, setPlaylists] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { isCollapsed } = useSidebar();
+
+  // Modal States
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState("");
+
+  // Editing State
+  const [editingId, setEditingId] = useState(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [managingPlaylist, setManagingPlaylist] = useState(null);
+
+  // Fetch Playlists
+  const fetchPlaylists = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API_BASE_URL}/api/playlists`, {
+        headers: { "x-auth-token": token },
+      });
+      setPlaylists(res.data);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load library");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPlaylists();
+  }, []);
+
+  // Create Playlist
+  const handleCreatePlaylist = async (e) => {
+    e.preventDefault();
+    if (!newPlaylistName.trim()) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `${API_BASE_URL}/api/playlists`,
+        { name: newPlaylistName },
+        { headers: { "x-auth-token": token } },
+      );
+      toast.success("Playlist created!");
+      setNewPlaylistName("");
+      setShowCreateModal(false);
+      fetchPlaylists();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create playlist");
+    }
+  };
+
+  // Delete Playlist
+  const handleDeletePlaylist = async (id, e) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to delete this playlist?"))
+      return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`${API_BASE_URL}/api/playlists/${id}`, {
+        headers: { "x-auth-token": token },
+      });
+      toast.success("Playlist deleted");
+      fetchPlaylists();
+    } catch (err) {
+      console.error(err);
+      toast.error("Could not delete playlist");
+    }
+  };
+
+  // Start Editing
+  const handleStartEdit = (e, playlist) => {
+    e.stopPropagation();
+    setManagingPlaylist(playlist);
+    setRenameValue(playlist.name);
+  };
+
+  const handleRemoveSong = async (playlistId, videoId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(
+        `http://localhost:5000/api/playlists/${playlistId}/songs/${videoId}`,
+        {
+          headers: { "x-auth-token": token },
+        },
+      );
+      toast.success("Song removed");
+
+      // Update local state immediately for fast UI
+      setManagingPlaylist((prev) => ({
+        ...prev,
+        songs: prev.songs.filter((s) => s.videoId !== videoId),
+      }));
+      fetchPlaylists(); // Refresh background data
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to remove song");
+    }
+  };
+
+  // Save Rename
+  const handleRename = async (e, id) => {
+    e.stopPropagation();
+    if (!renameValue.trim()) return;
+
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(
+        `${API_BASE_URL}/api/playlists/${id}`,
+        { name: renameValue },
+        { headers: { "x-auth-token": token } },
+      );
+      toast.success("Playlist renamed");
+      setEditingId(null);
+      fetchPlaylists();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to rename");
+    }
+  };
+
+  // Play playlist
+  const handlePlayPlaylist = (e, playlist) => {
+    e.stopPropagation();
+    if (playlist.songs.length > 0) {
+      const formattedSongs = playlist.songs.map((s) => ({
+        id: s.videoId,
+        title: s.title,
+        artist: s.artist,
+        image: s.image,
+      }));
+      playSong(formattedSongs[0], formattedSongs);
+    } else {
+      toast.error("Playlist is empty");
+    }
+  };
+
+  // Helper to format date like "Oct 24, 2023"
+  const formatDate = (dateString) => {
+    const options = { year: "numeric", month: "short", day: "numeric" };
+    return new Date(dateString).toLocaleDateString("en-US", options);
+  };
+
+  const gradients = [
+    "from-orange-400 to-rose-500",
+    "from-blue-400 to-indigo-600",
+    "from-emerald-400 to-cyan-500",
+    "from-purple-500 to-pink-500",
+    "from-slate-500 to-slate-800",
+  ];
+
+  const filteredPlaylists = playlists.filter((p) =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  return (
+    <div className="min-h-screen bg-[#121212] text-white font-sans">
+      <Toaster
+        position="top-center"
+        toastOptions={{ style: { background: "#1e1e1e", color: "#fff" } }}
+      />
+      <div className="hidden md:block">
+        <Sidebar />
+      </div>
+
+      <main
+        className={`w-full transition-all duration-300 ease-in-out px-8 md:px-16 pt-16 pb-32 min-h-screen ${
+          isCollapsed ? "md:ml-[80px]" : "md:ml-[260px]"
+        }`}
+      >
+        <div className="flex flex-col gap-2 mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">
+            Your Saved Playlists
+          </h1>
+          <p className="text-slate-400 text-sm">
+            Manage and listen to your curated mood-based collections.
+          </p>
+        </div>
+
+        <div className="relative max-w-sm mb-8 group">
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#4b2bee] transition-colors"
+            size={18}
+          />
+          <input
+            type="text"
+            placeholder="Search playlists..."
+            className="w-full bg-[#1e1e1e] border border-[#ffffff1a] rounded-full py-2.5 pl-10 pr-4 text-sm text-slate-200 focus:border-[#4b2bee] transition-all outline-none"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <Loader2 className="animate-spin text-[#4b2bee]" size={32} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            {/* Create New Card */}
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="relative w-full aspect-[347/352] bg-[#1e1e1e] rounded-[32px] overflow-hidden border-2 border-dashed border-[#ffffff1a] flex flex-col items-center justify-center gap-2 text-slate-400 hover:text-white hover:border-[#4b2bee] hover:bg-[#4b2bee]/5 transition-all group"
+            >
+              <div className="w-10 h-10 rounded-full bg-[#1e1e1e] flex items-center justify-center group-hover:scale-110 transition-transform shadow-md border border-[#ffffff0d]">
+                <Plus size={20} />
+              </div>
+              <span className="font-semibold text-xs">Create New</span>
+            </button>
+
+            {/* Render Playlists */}
+            {filteredPlaylists.map((playlist, index) => (
+              <article
+                key={playlist._id}
+                onClick={() => setEditingId(null)}
+                className="relative w-full aspect-[347/352] bg-[#1e1e1e] rounded-[32px] overflow-hidden border border-[#ffffff0d] group hover:-translate-y-1 transition-transform duration-300 shadow-xl"
+              >
+                {/* 1. Top Image Section */}
+                <div
+                  className={`absolute w-full h-[55%] top-0 left-0 bg-gradient-to-br ${gradients[index % gradients.length]}`}
+                >
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                </div>
+
+                {/* 2. Floating Play Button */}
+                <button
+                  onClick={(e) => handlePlayPlaylist(e, playlist)}
+                  className="absolute left-4 top-[55%] -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-[#4b2bee] rounded-full shadow-lg z-20 hover:scale-110 transition-transform cursor-pointer border-2 border-[#1e1e1e]"
+                  aria-label="Play playlist"
+                  type="button"
+                >
+                  <Play
+                    size={16}
+                    fill="currentColor"
+                    className="text-white ml-0.5"
+                  />
+                </button>
+
+                {/* 3. Playlist Title / Edit Input */}
+                <div className="absolute top-[calc(55%_+_24px)] left-4 right-4 h-7 flex items-center z-10">
+                  {editingId === playlist._id ? (
+                    <div className="flex items-center gap-1 w-full bg-[#1e1e1e] border-b border-[#4b2bee] z-40">
+                      <input
+                        type="text"
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-transparent text-white font-bold text-sm w-full outline-none p-0"
+                        autoFocus
+                      />
+                      <button
+                        onClick={(e) => handleRename(e, playlist._id)}
+                        className="text-[#4b2bee] hover:text-white"
+                      >
+                        <Check size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <h2
+                      className="font-bold text-white text-base truncate leading-tight w-full"
+                      title={playlist.name}
+                    >
+                      {playlist.name}
+                    </h2>
+                  )}
+                </div>
+
+                {/* 4. Metadata (Now using formatDate correctly!) */}
+                <div className="absolute top-[calc(55%_+_52px)] left-4 flex items-center gap-2 opacity-80">
+                  <span className="font-normal text-gray-400 text-[10px] tracking-wide whitespace-nowrap">
+                    {playlist.songs.length} Tracks
+                  </span>
+                  <div className="w-0.5 h-0.5 bg-gray-600 rounded-full" />
+                  <time className="font-normal text-gray-400 text-[10px] tracking-wide whitespace-nowrap">
+                    {formatDate(playlist.createdAt)}
+                  </time>
+                </div>
+
+                {/* 5. Avatars */}
+                <div className="absolute bottom-4 left-4 flex items-center">
+                  {playlist.songs.length === 0 ? (
+                    <div className="w-6 h-6 rounded-full border border-[#1e1e1e] bg-[#2a2a2a]" />
+                  ) : (
+                    playlist.songs.slice(0, 3).map((song, i) => (
+                      <div
+                        key={i}
+                        className="w-6 h-6 rounded-full border border-[#1e1e1e] overflow-hidden bg-slate-800"
+                        style={{ marginLeft: i > 0 ? "-8px" : "0" }}
+                      >
+                        <img
+                          src={song.image}
+                          alt="art"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* 6. Edit & Delete Buttons */}
+                {!playlist.isFavorites && (
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 z-30">
+                    <button
+                      onClick={(e) => handleStartEdit(e, playlist)}
+                      className="w-7 h-7 flex items-center justify-center bg-[#2a2a2a] hover:bg-[#4b2bee] border border-[#ffffff1a] rounded-full text-slate-400 hover:text-white transition-all shadow-md"
+                      title="Rename"
+                    >
+                      <Edit2 size={12} />
+                    </button>
+                    <button
+                      onClick={(e) => handleDeletePlaylist(playlist._id, e)}
+                      className="w-7 h-7 flex items-center justify-center bg-[#2a2a2a] hover:bg-red-600 border border-[#ffffff1a] rounded-full text-slate-400 hover:text-white transition-all shadow-md"
+                      title="Delete"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Create Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1e1e1e] rounded-[32px] p-8 w-full max-w-sm border border-[#ffffff1a] shadow-2xl animate-fade-in">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-white">New Collection</h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleCreatePlaylist}>
+              <input
+                type="text"
+                value={newPlaylistName}
+                onChange={(e) => setNewPlaylistName(e.target.value)}
+                placeholder="Playlist Name"
+                className="w-full bg-[#121212] rounded-xl px-4 py-3 text-white border border-[#ffffff1a] focus:border-[#4b2bee] outline-none mb-6 text-sm"
+                autoFocus
+              />
+              <button
+                type="submit"
+                className="w-full py-3 bg-[#4b2bee] hover:bg-[#3b22c0] rounded-xl font-bold text-sm transition-all"
+              >
+                Create
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MANAGE PLAYLIST MODAL - APPLE MUSIC AESTHETIC */}
+      {managingPlaylist && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-fade-in">
+          <div className="bg-[#1C1C1E]/80 backdrop-blur-3xl rounded-[32px] w-full max-w-3xl max-h-[85vh] flex flex-col border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.5)] overflow-hidden">
+            {/* Header Section */}
+            <div className="relative pt-10 pb-8 px-8 flex flex-col md:flex-row gap-8 items-start md:items-end border-b border-white/5">
+              {/* Floating Close Button */}
+              <button
+                onClick={() => setManagingPlaylist(null)}
+                className="absolute top-6 right-6 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white/60 hover:text-white backdrop-blur-md transition-all"
+              >
+                <X size={20} />
+              </button>
+
+              {/* Apple Music Style Playlist Cover Collage */}
+              <div className="w-32 h-32 md:w-40 md:h-40 shrink-0 rounded-2xl overflow-hidden shadow-2xl bg-[#2C2C2E] grid grid-cols-2 grid-rows-2">
+                {managingPlaylist.songs.length === 0 ? (
+                  <div className="col-span-2 row-span-2 flex items-center justify-center text-white/20">
+                    <Music size={40} />
+                  </div>
+                ) : managingPlaylist.songs.length < 4 ? (
+                  <img
+                    src={managingPlaylist.songs[0].image}
+                    alt="cover"
+                    className="col-span-2 row-span-2 w-full h-full object-cover"
+                  />
+                ) : (
+                  managingPlaylist.songs
+                    .slice(0, 4)
+                    .map((song, i) => (
+                      <img
+                        key={i}
+                        src={song.image}
+                        alt="cover"
+                        className="w-full h-full object-cover"
+                      />
+                    ))
+                )}
+              </div>
+
+              {/* Title & Edit Section */}
+              <div className="flex-1 w-full">
+                <span className="text-white/50 text-xs font-bold tracking-widest uppercase mb-2 block">
+                  Playlist
+                </span>
+
+                <div className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    value={renameValue}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    placeholder="Playlist Name"
+                    className="w-full bg-transparent text-3xl md:text-4xl font-extrabold text-white outline-none border-b border-white/10 focus:border-[#4b2bee] transition-colors pb-1 placeholder:text-white/20 truncate"
+                  />
+
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-white/60 text-sm font-medium">
+                      {managingPlaylist.songs.length}{" "}
+                      {managingPlaylist.songs.length === 1 ? "Song" : "Songs"}
+                    </span>
+
+                    <button
+                      onClick={(e) => handleRename(e, managingPlaylist._id)}
+                      className="px-5 py-1.5 bg-white text-black hover:bg-gray-200 hover:scale-105 active:scale-95 rounded-full font-bold text-sm transition-all shadow-lg"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tracks List */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 custom-scrollbar">
+              {managingPlaylist.songs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-48 text-center px-4">
+                  <p className="text-white/40 font-medium text-lg">
+                    Your playlist is empty.
+                  </p>
+                  <p className="text-white/30 text-sm mt-1">
+                    Generate a new mood to add some tracks here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {managingPlaylist.songs.map((song, index) => (
+                    <div
+                      key={song.videoId}
+                      className="flex items-center gap-4 p-3 hover:bg-white/5 rounded-xl group transition-colors"
+                    >
+                      {/* Track Number */}
+                      <span className="w-6 text-center text-white/30 text-sm font-medium group-hover:text-white/60 transition-colors">
+                        {index + 1}
+                      </span>
+
+                      {/* Cover */}
+                      <img
+                        src={song.image}
+                        alt="cover"
+                        className="w-10 h-10 rounded-md object-cover shadow-sm"
+                      />
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-semibold text-sm truncate">
+                          {song.title}
+                        </p>
+                        <p className="text-white/50 text-xs truncate mt-0.5">
+                          {song.artist}
+                        </p>
+                      </div>
+
+                      {/* Remove Button (Appears on Hover) */}
+                      <button
+                        onClick={() =>
+                          handleRemoveSong(managingPlaylist._id, song.videoId)
+                        }
+                        className="p-2 text-white/20 hover:text-red-500 hover:bg-red-500/10 rounded-full opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
+                        title="Remove track"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <Player />
+    </div>
+  );
+};
