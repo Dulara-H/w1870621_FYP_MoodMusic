@@ -176,8 +176,8 @@ export const Home = () => {
       console.error("Playlist Creation Error:", err);
       toast.error(
         err.response?.data?.msg ||
-          err.response?.data?.message ||
-          "Failed to create playlist container.",
+        err.response?.data?.message ||
+        "Failed to create playlist container.",
       );
     } finally {
       setIsSaving(false);
@@ -379,7 +379,7 @@ export const Home = () => {
                   </div>
                 ) : (
                   <TrackCarousel
-                    title="Iso-Principle Match"
+                    title=""
                     subtitle={`Music perfectly aligned with ${selectedMood}.`}
                     songs={generatedSongs}
                   />
