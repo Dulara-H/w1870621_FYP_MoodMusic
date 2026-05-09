@@ -221,7 +221,8 @@ exports.forgotPassword = async (req, res) => {
       .update(resetToken)
       .digest("hex");
     user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 Minutes
-    await user.save();
+    await user
+      .save();
 
     // 3. Create Reset URL (Frontend URL)
     const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
