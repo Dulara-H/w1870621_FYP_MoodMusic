@@ -5,6 +5,7 @@ import { Sidebar } from "../components/Sidebar";
 import { Player } from "../components/Player";
 import { useSidebar } from "../context/SidebarContext";
 import { usePlayer } from "../context/PlayerContext";
+import { API_BASE_URL } from "../config";
 import {
   Sparkles,
   Globe,
@@ -63,7 +64,7 @@ export const Home = () => {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/music/recommend",
+        `${API_BASE_URL}/api/music/recommend`,
         {
           mood: selectedMood,
           language: selectedLanguage,
@@ -117,7 +118,7 @@ export const Home = () => {
 
       // Step A: Create the empty playlist container
       const createRes = await axios.post(
-        "http://localhost:5000/api/playlists",
+        `${API_BASE_URL}/api/playlists`,
         { name: savePlaylistName },
         config,
       );
@@ -141,7 +142,7 @@ export const Home = () => {
       for (const song of uniqueSongs) {
         try {
           await axios.post(
-            `http://localhost:5000/api/playlists/${newPlaylistId}/songs`,
+            `${API_BASE_URL}/api/playlists/${newPlaylistId}/songs`,
             {
               videoId: song.id || song.videoId || `generated_${Math.random()}`,
               title: song.title || "Unknown Title",

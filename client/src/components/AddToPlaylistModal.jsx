@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { X, Plus, ListMusic } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { API_BASE_URL } from "../config";
 
 export const AddToPlaylistModal = ({ song, onClose }) => {
   const [playlists, setPlaylists] = useState([]);
@@ -12,7 +13,7 @@ export const AddToPlaylistModal = ({ song, onClose }) => {
     const fetchPlaylists = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/playlists", {
+        const res = await axios.get(`${API_BASE_URL}/api/playlists`, {
           headers: { "x-auth-token": token },
         });
         setPlaylists(res.data);
@@ -30,7 +31,7 @@ export const AddToPlaylistModal = ({ song, onClose }) => {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        `http://localhost:5000/api/playlists/${playlistId}/songs`,
+        `${API_BASE_URL}/api/playlists/${playlistId}/songs`,
         {
           videoId: song.id,
           title: song.title,

@@ -104,7 +104,7 @@ export const Library = () => {
     try {
       const token = localStorage.getItem("token");
       await axios.delete(
-        `http://localhost:5000/api/playlists/${playlistId}/songs/${videoId}`,
+        `${API_BASE_URL}/api/playlists/${playlistId}/songs/${videoId}`,
         {
           headers: { "x-auth-token": token },
         },
@@ -189,9 +189,8 @@ export const Library = () => {
       </div>
 
       <main
-        className={`w-full transition-all duration-300 ease-in-out px-8 md:px-16 pt-16 pb-32 min-h-screen ${
-          isCollapsed ? "md:ml-[80px]" : "md:ml-[260px]"
-        }`}
+        className={`w-full transition-all duration-300 ease-in-out px-8 md:px-16 pt-16 pb-32 min-h-screen ${isCollapsed ? "md:ml-[80px]" : "md:ml-[260px]"
+          }`}
       >
         <div className="flex flex-col gap-2 mb-8">
           <h1 className="text-3xl font-bold tracking-tight">

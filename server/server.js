@@ -12,7 +12,12 @@ const app = express();
 app.use(express.json());
 app.use(
   cors({
-    origin: ["https://mood-music-steel.vercel.app", "http://localhost:5173"],
+    origin: [
+      "https://w1870621-fyp-mood-music.vercel.app",
+      "https://mood-music-steel.vercel.app",
+      "http://localhost:5173",
+    ],
+    credentials: true,
   }),
 );
 

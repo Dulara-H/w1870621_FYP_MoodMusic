@@ -3,6 +3,7 @@ import axios from "axios";
 import { toast } from "react-hot-toast";
 import { usePlayer } from "../context/PlayerContext";
 import { AuthPromptModal } from "./AuthPromptModal"; // IMPORT THE MODAL
+import { API_BASE_URL } from "../config";
 import {
   Play,
   Pause,
@@ -57,7 +58,7 @@ export const Player = () => {
     const fetchFavoritesId = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/playlists", {
+        const res = await axios.get(`${API_BASE_URL}/api/playlists`, {
           headers: { "x-auth-token": token },
         });
         const favList = res.data.find((p) => p.isFavorites);
@@ -76,7 +77,7 @@ export const Player = () => {
       if (!currentSong || !favoritesId) return;
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/api/playlists", {
+        const res = await axios.get(`${API_BASE_URL}/api/playlists`, {
           headers: { "x-auth-token": token },
         });
         const favList = res.data.find((p) => p._id === favoritesId);
@@ -111,7 +112,7 @@ export const Player = () => {
 
       if (!targetId) {
         const createRes = await axios.post(
-          "http://localhost:5000/api/playlists",
+          `${API_BASE_URL}/api/playlists`,
           { name: "Favorites", isFavorites: true },
           config,
         );
@@ -121,14 +122,14 @@ export const Player = () => {
 
       if (isLiked) {
         await axios.delete(
-          `http://localhost:5000/api/playlists/${targetId}/songs/${currentSong.id}`,
+          `${API_BASE_URL}/api/playlists/${targetId}/songs/${currentSong.id}`,
           config,
         );
         setIsLiked(false);
         toast.success("Removed from Favorites");
       } else {
         await axios.post(
-          `http://localhost:5000/api/playlists/${targetId}/songs`,
+          `${API_BASE_URL}/api/playlists/${targetId}/songs`,
           {
             videoId: currentSong.id,
             title: currentSong.title,
