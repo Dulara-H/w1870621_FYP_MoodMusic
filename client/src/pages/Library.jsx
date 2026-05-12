@@ -524,4 +524,4 @@ return (
     <Player />
   </div>
 );
-};
+

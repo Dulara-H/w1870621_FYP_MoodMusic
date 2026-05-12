@@ -206,7 +206,7 @@ export const Sidebar = () => {
                 {isCollapsed ? <UserPlus size={20} /> : "Sign Up Free"}
               </Link>
             </>
-          )}}
+          )}
         </div>
       </aside>
     </>
