@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Search, Loader2, X, Plus, Play } from "lucide-react"; // Removed Compass
+import { Search, Loader2, X, Plus, Play } from "lucide-react";
 import { Sidebar } from "../components/Sidebar";
 import { Player } from "../components/Player";
 import { toast } from "react-hot-toast";
@@ -8,31 +8,39 @@ import { usePlayer } from "../context/PlayerContext";
 import { useSidebar } from "../context/SidebarContext";
 import { AddToPlaylistModal } from "../components/AddToPlaylistModal";
 
+// API endpoints for YouTube music search
 const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY;
 const YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/search";
 const YOUTUBE_DETAILS_URL = "https://www.googleapis.com/youtube/v3/videos";
 const SUGGESTION_URL = "https://suggestqueries.google.com/complete/search";
 
+// Main Discover page component - allows users to search and browse music
 export const Discover = () => {
+  // Hooks and context
   const { playSong } = usePlayer();
+  const { isCollapsed } = useSidebar();
+
+  // Search and tab state
   const [activeTab, setActiveTab] = useState("songs");
   const [searchQuery, setSearchQuery] = useState("");
   const [musicCards, setMusicCards] = useState([]);
   const [loading, setLoading] = useState(false);
-  const { isCollapsed } = useSidebar();
 
+  // Search suggestions state
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchContainerRef = useRef(null);
+
+  // Playlist modal state
   const [songToAdd, setSongToAdd] = useState(null);
 
-  // 1. Fetch Music Function (UPGRADED: Hidden API Modifiers & 3-Min Filter)
+  // Fetch music from YouTube based on search query and filters by duration (3+ min)
   const fetchMusic = async (query = "lofi hip hop") => {
     setLoading(true);
     setShowSuggestions(false);
 
     try {
-      // 🚨 THE FIX: Create a hidden search query so the UI stays clean!
+      // Enhance search query based on active tab for better results
       let hiddenApiQuery = query;
       if (
         activeTab === "playlists" &&
@@ -46,7 +54,7 @@ export const Discover = () => {
         hiddenApiQuery = `${query} official audio`;
       }
 
-      // Step A: Fetch a larger batch of 30 videos
+      // Fetch 30 videos to have more options
       const searchResponse = await axios.get(YOUTUBE_URL, {
         params: {
           part: "snippet",
@@ -71,7 +79,7 @@ export const Discover = () => {
         .map((item) => item.id.videoId)
         .join(",");
 
-      // Step B: Fetch EXACT duration of the videos
+      // Get exact duration for each video
       const detailsResponse = await axios.get(YOUTUBE_DETAILS_URL, {
         params: {
           part: "contentDetails,snippet",
@@ -80,7 +88,7 @@ export const Discover = () => {
         },
       });
 
-      // Step C: Mathematically purge any video under 3 minutes (180 seconds)
+      // Filter out videos shorter than 3 minutes
       const parseDurationToSeconds = (duration) => {
         const match = duration.match(/PT(\d+H)?(\d+M)?(\d+S)?/);
         const hours = parseInt(match[1]) || 0;
@@ -96,7 +104,7 @@ export const Discover = () => {
         return totalSeconds >= 180; // Must be at least 3 minutes
       });
 
-      // Format surviving videos and slice back down to 15 items
+      // Format videos and keep top 15 results
       const formattedData = validVideos.slice(0, 15).map((item) => ({
         id: item.id,
         title: item.snippet.title,
@@ -113,7 +121,7 @@ export const Discover = () => {
     }
   };
 
-  // 2. Real Randomizer Logic (Clean Genre UI)
+  // Pick random genre and fetch music
   const handleExploreRandom = () => {
     const randomGenresList = [
       "Synthwave",
@@ -136,21 +144,21 @@ export const Discover = () => {
       "Bossa Nova",
     ];
 
-    // Pick a clean genre name
+    // Pick random genre and search
     const randomGenre =
       randomGenresList[Math.floor(Math.random() * randomGenresList.length)];
-
-    // 🚨 THE FIX: Set the UI search bar to strictly the clean genre name
     setSearchQuery(randomGenre);
     fetchMusic(randomGenre);
   };
 
+  // Fetch search suggestions from Google's YouTube suggestion API
   const fetchSuggestions = (query) => {
     if (!query) {
       setSuggestions([]);
       return;
     }
 
+    // Use JSONP callback for cross-origin request
     const script = document.createElement("script");
     const callbackName =
       "youtubeSuggestions_" + Math.random().toString(36).substring(7);
@@ -168,6 +176,7 @@ export const Discover = () => {
     document.body.appendChild(script);
   };
 
+  // Initialize page with mood from URL or default trending hits
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const initialMood = params.get("mood");
@@ -181,6 +190,7 @@ export const Discover = () => {
     }
   }, []);
 
+  // Debounced search suggestions as user types (300ms delay)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery.length > 1) {
@@ -192,6 +202,7 @@ export const Discover = () => {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // Close suggestions when clicking outside search box
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -205,22 +216,26 @@ export const Discover = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Trigger search when Enter key pressed
   const handleSearch = (e) => {
     if (e.key === "Enter" && searchQuery.trim()) {
       fetchMusic(searchQuery);
     }
   };
 
+  // Search for selected suggestion
   const handleSuggestionClick = (suggestion) => {
     setSearchQuery(suggestion);
     fetchMusic(suggestion);
   };
 
+  // Play song when music card clicked
   const handleCardClick = (e, card) => {
     e.stopPropagation();
     playSong(card, musicCards);
   };
 
+  // Open modal to add song to playlist
   const openPlaylistModal = (e, card) => {
     e.stopPropagation();
     setSongToAdd(card);
@@ -233,14 +248,13 @@ export const Discover = () => {
       </div>
 
       <main
-        className={`relative w-full transition-all duration-300 ease-in-out pt-12 pb-32 min-h-screen flex flex-col ${
-          isCollapsed ? "md:ml-[80px]" : "md:ml-[260px]"
-        }`}
+        className={`relative w-full transition-all duration-300 ease-in-out pt-12 pb-32 min-h-screen flex flex-col ${isCollapsed ? "md:ml-[80px]" : "md:ml-[260px]"
+          }`}
       >
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#4B2BEE]/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="w-full px-8 md:px-12 box-border relative z-10">
-          {/* Header Section without Compass Icon */}
+          {/* Page header */}
           <div className="flex flex-col items-start gap-1 mb-10 animate-fade-in">
             <h1 className="text-white text-4xl md:text-5xl font-bold tracking-tight">
               Discover
@@ -250,7 +264,9 @@ export const Discover = () => {
             </p>
           </div>
 
+          {/* Search and filter section */}
           <div className="flex flex-col gap-6 mb-12 animate-fade-in">
+            {/* Search input with suggestions */}
             <div className="relative max-w-2xl z-20" ref={searchContainerRef}>
               <Search
                 className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"
@@ -300,6 +316,7 @@ export const Discover = () => {
               )}
             </div>
 
+            {/* Tab switcher for Songs vs Playlists */}
             <div className="flex gap-2 bg-white/5 backdrop-blur-md w-fit p-1.5 rounded-full border border-white/10 shadow-lg">
               <button
                 onClick={() => {
@@ -307,11 +324,10 @@ export const Discover = () => {
                   setSearchQuery("Trending Hits 2025");
                   fetchMusic("Trending Hits 2025");
                 }}
-                className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${
-                  activeTab === "songs"
-                    ? "bg-[#4b2bee] text-white shadow-md"
-                    : "text-slate-400 hover:text-white"
-                }`}
+                className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${activeTab === "songs"
+                  ? "bg-[#4b2bee] text-white shadow-md"
+                  : "text-slate-400 hover:text-white"
+                  }`}
               >
                 Songs
               </button>
@@ -321,18 +337,19 @@ export const Discover = () => {
                   setSearchQuery("Viral Music Playlists");
                   fetchMusic("Viral Music Playlists");
                 }}
-                className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${
-                  activeTab === "playlists"
-                    ? "bg-[#4b2bee] text-white shadow-md"
-                    : "text-slate-400 hover:text-white"
-                }`}
+                className={`px-8 py-2 rounded-full text-sm font-bold transition-all ${activeTab === "playlists"
+                  ? "bg-[#4b2bee] text-white shadow-md"
+                  : "text-slate-400 hover:text-white"
+                  }`}
               >
                 Playlists
               </button>
             </div>
           </div>
 
+          {/* Results section */}
           <div>
+            {/* Results header with refresh button */}
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
                 {searchQuery && musicCards.length > 0
@@ -350,12 +367,14 @@ export const Discover = () => {
               </button>
             </div>
 
+            {/* Show loader while fetching, display grid when ready */}
             {loading ? (
               <div className="flex items-center justify-center h-64">
                 <Loader2 className="animate-spin text-[#4b2bee]" size={40} />
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 gap-y-10 animate-fade-in">
+                {/* Music card for each result */}
                 {musicCards.map((card) => (
                   <div
                     key={card.id}

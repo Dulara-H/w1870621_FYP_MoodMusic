@@ -1,19 +1,21 @@
 import { Music, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+// Modal component to prompt users to sign up or log in
 export const AuthPromptModal = ({ isOpen, onClose, message }) => {
   const navigate = useNavigate();
 
+  // Return nothing if modal is closed
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-md z-[100] flex items-center justify-center p-4 sm:p-6 animate-fade-in">
       <div className="relative bg-[#1C1C1E]/80 backdrop-blur-3xl rounded-[40px] p-8 md:p-10 w-full max-w-md border border-white/10 shadow-[0_30px_60px_rgba(0,0,0,0.5)] text-center overflow-hidden">
-        {/* Ambient Liquid Glow Effects behind the glass */}
+        {/* Ambient glow effects */}
         <div className="absolute -top-20 -left-20 w-56 h-56 bg-[#4B2BEE]/30 rounded-full blur-[80px] pointer-events-none" />
         <div className="absolute -bottom-20 -right-20 w-56 h-56 bg-[#8B5CF6]/20 rounded-full blur-[80px] pointer-events-none" />
 
-        {/* Floating Close Button */}
+        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-6 right-6 p-2 bg-black/20 hover:bg-black/40 rounded-full text-white/60 hover:text-white backdrop-blur-md transition-all z-10"
@@ -21,12 +23,12 @@ export const AuthPromptModal = ({ isOpen, onClose, message }) => {
           <X size={20} />
         </button>
 
-        {/* Glossy Icon Container */}
+        {/* Icon container */}
         <div className="relative z-10 w-20 h-20 bg-gradient-to-br from-[#4B2BEE]/20 to-[#8B5CF6]/20 border border-white/10 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-[0_10px_30px_rgba(75,43,238,0.2)] backdrop-blur-md">
           <Music size={36} className="text-[#a594ff]" />
         </div>
 
-        {/* Typography */}
+        {/* Title and message */}
         <h2 className="relative z-10 text-3xl font-extrabold text-white mb-3 tracking-tight">
           Unlock Full Access
         </h2>
@@ -35,7 +37,7 @@ export const AuthPromptModal = ({ isOpen, onClose, message }) => {
             "Sign up to listen to full tracks, create playlists, and save your favorite moods."}
         </p>
 
-        {/* Apple Music Style Pill Buttons */}
+        {/* Sign up and login buttons */}
         <div className="relative z-10 flex flex-col gap-4">
           <button
             onClick={() => navigate("/register")}

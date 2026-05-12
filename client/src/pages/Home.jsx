@@ -18,29 +18,31 @@ import {
   Zap,
 } from "lucide-react";
 
+// Home page - main page where users generate mood-based playlists
 export const Home = () => {
+  // Context hooks
   const { isCollapsed } = useSidebar();
   const { playSong } = usePlayer();
   const resultsRef = useRef(null);
 
-  // Form State
+  // Form state - user selections
   const [selectedMood, setSelectedMood] = useState("Sad");
   const [selectedLanguage, setSelectedLanguage] = useState("English");
   const [selectedGenre, setSelectedGenre] = useState("Synthwave");
 
-  // Generation & Results State
+  // Playlist generation state
   const [showLogicModal, setShowLogicModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
-  const [generationType, setGenerationType] = useState("match"); // Tracks which UI to show
-
+  const [generationType, setGenerationType] = useState("match"); // "match" or "lift"
   const [generatedSongs, setGeneratedSongs] = useState([]);
 
-  // Save Playlist Modal State
+  // Save playlist modal state
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [savePlaylistName, setSavePlaylistName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
+  // Available options for selection
   const moods = ["Happy", "Sad", "Focused", "Energetic", "Chill", "Romantic"];
   const languages = ["English", "Spanish", "Korean", "Japanese", "French"];
   const genres = [
@@ -52,10 +54,10 @@ export const Home = () => {
     "Classical",
   ];
 
-  // 1. Open Logic Modal
+  // Show logic modal to choose generation mode
   const handleGenerateClick = () => setShowLogicModal(true);
 
-  // 2. Fetch Playlist Logic (Updated to POST request for 3-Stage Logic)
+  // Fetch generated playlist based on selections
   const fetchGeneratedPlaylist = async (mode) => {
     setShowLogicModal(false);
     setLoading(true);
@@ -63,6 +65,7 @@ export const Home = () => {
     setGenerationType(mode);
 
     try {
+      // Request playlist from backend with user preferences
       const res = await axios.post(
         `${API_BASE_URL}/api/music/recommend`,
         {
@@ -76,6 +79,7 @@ export const Home = () => {
       setGeneratedSongs(res.data);
       setHasGenerated(true);
 
+      // Scroll to results section
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({
           behavior: "smooth",
@@ -90,10 +94,11 @@ export const Home = () => {
     }
   };
 
+  // Handlers for "Match Vibe" and "Lift Spirits" buttons
   const handleMatchVibe = () => fetchGeneratedPlaylist("match");
   const handleLiftSpirits = () => fetchGeneratedPlaylist("lift");
 
-  // 3. Open Save Modal
+  // Open modal to save playlist (checks if user is logged in)
   const handleOpenSaveModal = () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -105,7 +110,7 @@ export const Home = () => {
     setShowSaveModal(true);
   };
 
-  // 4. Execute Save to Database (With Pre-Filtering & Fault Tolerance)
+  // Save generated playlist to database with duplicate filtering
   const confirmSavePlaylist = async (e) => {
     e.preventDefault();
     if (!savePlaylistName.trim()) return;
@@ -116,7 +121,7 @@ export const Home = () => {
         headers: { "x-auth-token": localStorage.getItem("token") },
       };
 
-      // Step A: Create the empty playlist container
+      // Create empty playlist container
       const createRes = await axios.post(
         `${API_BASE_URL}/api/playlists`,
         { name: savePlaylistName },
@@ -124,7 +129,7 @@ export const Home = () => {
       );
       const newPlaylistId = createRes.data._id;
 
-      // 🚨 THE UPGRADE: Remove duplicates BEFORE sending to the server
+      // Remove duplicate songs before saving
       const uniqueSongs = [];
       const seenIds = new Set();
 
@@ -138,7 +143,7 @@ export const Home = () => {
 
       let savedCount = 0;
 
-      // Step B: Save unique songs individually
+      // Save each song individually to playlist
       for (const song of uniqueSongs) {
         try {
           await axios.post(
@@ -164,7 +169,7 @@ export const Home = () => {
         }
       }
 
-      // Step C: Success Output
+      // Show success message
       if (savedCount > 0) {
         toast.success(
           `"${savePlaylistName}" successfully saved with ${savedCount} tracks!`,
@@ -185,8 +190,7 @@ export const Home = () => {
     }
   };
 
-  // --- REUSABLE TRACK CAROUSEL COMPONENT ---
-  // We write the HTML for the scrollable row here once, and reuse it for all 3 stages below.
+  // Reusable component to display scrollable track carousel
   const TrackCarousel = ({ songs, title, subtitle }) => (
     <div className="mb-10 w-full animate-fade-in">
       {title && (
@@ -247,6 +251,7 @@ export const Home = () => {
           </div>
 
           <div className="flex flex-col gap-8 max-w-4xl mb-16">
+            {/* Mood selection */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <Sparkles size={20} className="text-[#4b2bee]" />
@@ -255,6 +260,7 @@ export const Home = () => {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2.5">
+                {/* Mood buttons */}
                 {moods.map((mood) => (
                   <button
                     key={mood}
@@ -267,6 +273,7 @@ export const Home = () => {
               </div>
             </div>
 
+            {/* Language selection */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <Globe size={20} className="text-[#4b2bee]" />
@@ -275,6 +282,7 @@ export const Home = () => {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2.5">
+                {/* Language buttons */}
                 {languages.map((lang) => (
                   <button
                     key={lang}
@@ -287,6 +295,7 @@ export const Home = () => {
               </div>
             </div>
 
+            {/* Genre selection */}
             <div className="flex flex-col gap-3">
               <div className="flex items-center gap-2">
                 <Music size={20} className="text-[#4b2bee]" />
@@ -295,6 +304,7 @@ export const Home = () => {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2.5">
+                {/* Genre buttons */}
                 {genres.map((genre) => (
                   <button
                     key={genre}
@@ -307,6 +317,7 @@ export const Home = () => {
               </div>
             </div>
 
+            {/* Generate button - opens logic modal */}
             <button
               onClick={handleGenerateClick}
               disabled={loading}
@@ -326,10 +337,11 @@ export const Home = () => {
             </button>
           </div>
 
-          {/* --- GENERATED PLAYLIST SECTION --- */}
+          {/* Results section - displays generated playlist */}
           <div ref={resultsRef} className="pt-8 w-full overflow-hidden">
             {hasGenerated && generatedSongs.length > 0 && (
               <div className="animate-fade-in w-full">
+                {/* Show filter tags */}
                 <div className="flex items-center gap-2 mb-4">
                   <span className="py-1.5 px-3 bg-[#4B2BEE]/20 text-[#4B2BEE] text-xs font-bold rounded-xl border border-[#4b2bee]/30">
                     {selectedMood}
@@ -342,6 +354,7 @@ export const Home = () => {
                   </span>
                 </div>
 
+                {/* Playlist title */}
                 <h2 className="text-white text-3xl font-bold mb-1">
                   {generationType === "lift"
                     ? "Your Curated Therapy Mix"
@@ -353,9 +366,10 @@ export const Home = () => {
                     : "Perfectly curated for your current vibe."}
                 </p>
 
-                {/* DYNAMIC RENDERING BASED ON GENERATION TYPE */}
+                {/* Display tracks based on generation type */}
                 {generationType === "lift" ? (
                   <div className="flex flex-col w-full">
+                    {/* Three-stage therapy mix */}
                     <TrackCarousel
                       title="Stage 1: Acknowledgment"
                       subtitle={`Meeting you where you are: matching your current feeling of ${selectedMood}.`}
@@ -379,6 +393,7 @@ export const Home = () => {
                     />
                   </div>
                 ) : (
+                  /* Single vibe match */
                   <TrackCarousel
                     title=""
                     subtitle={`Music perfectly aligned with ${selectedMood}.`}
@@ -386,6 +401,7 @@ export const Home = () => {
                   />
                 )}
 
+                {/* Save button */}
                 <button
                   onClick={handleOpenSaveModal}
                   className="flex items-center bg-[#292348] hover:bg-[#342b5c] text-white py-3.5 px-8 mt-4 gap-2 rounded-full border border-[#FFFFFF1A] transition-colors shadow-lg"

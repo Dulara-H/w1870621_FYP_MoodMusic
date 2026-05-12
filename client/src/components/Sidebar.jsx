@@ -14,23 +14,27 @@ import {
 } from "lucide-react";
 import { useSidebar } from "../context/SidebarContext";
 import { usePlayer } from "../context/PlayerContext";
-import logo from "../assets/SVG.png"; // ✅ Your custom logo
+import logo from "../assets/SVG.png";
 
+// Navigation sidebar with collapsible menu and auth buttons
 export const Sidebar = () => {
+  // Hooks
   const location = useLocation();
   const navigate = useNavigate();
   const isAuthenticated = !!localStorage.getItem("token");
+  const { isCollapsed, toggleSidebar } = useSidebar();
+  const { currentSong } = usePlayer();
 
+  // Auth modal state
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  const { currentSong } = usePlayer();
-  const { isCollapsed, toggleSidebar } = useSidebar();
-
+  // Handle user logout
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/login");
   };
 
+  // Show auth modal for protected routes when not logged in
   const handleProtectedNavigation = (e, path) => {
     if (!isAuthenticated) {
       e.preventDefault();
@@ -40,6 +44,7 @@ export const Sidebar = () => {
     }
   };
 
+  // Check if current page is active
   const isActive = (path) => {
     if (path === "/" && location.pathname === "/home") return true;
     return location.pathname === path;
@@ -47,18 +52,19 @@ export const Sidebar = () => {
 
   return (
     <>
+      {/* Auth prompt modal */}
       <AuthPromptModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         message="Sign up to access your personal Library and Profile."
       />
 
+      {/* Sidebar container */}
       <aside
-        className={`fixed left-0 top-0 bg-[#0A0A0B] flex flex-col pt-6 z-40 transition-all duration-300 ease-in-out ${
-          isCollapsed ? "w-[80px]" : "w-[260px]"
-        } ${currentSong ? "h-[calc(100vh-96px)]" : "h-full"}`}
+        className={`fixed left-0 top-0 bg-[#0A0A0B] flex flex-col pt-6 z-40 transition-all duration-300 ease-in-out ${isCollapsed ? "w-[80px]" : "w-[260px]"
+          } ${currentSong ? "h-[calc(100vh-96px)]" : "h-full"}`}
       >
-        {/* Minimize Toggle Button */}
+        {/* Collapse/expand button */}
         <button
           onClick={toggleSidebar}
           className="absolute -right-3 top-8 bg-[#292348] border border-[#ffffff1a] text-white p-1 rounded-full z-50 hover:bg-[#4B2BEE] transition-colors shadow-lg"
@@ -66,11 +72,10 @@ export const Sidebar = () => {
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
 
-        {/* Logo & Header */}
+        {/* Logo and brand name */}
         <div
           className={`flex items-center mb-10 overflow-hidden transition-all ${isCollapsed ? "px-0 justify-center" : "px-6 gap-[13px]"}`}
         >
-          {/* Custom SVG Logo */}
           <div className="w-10 h-10 flex items-center justify-center shrink-0">
             <img
               src={logo}
@@ -89,8 +94,9 @@ export const Sidebar = () => {
           )}
         </div>
 
-        {/* Navigation Links */}
+        {/* Navigation menu */}
         <nav className="flex flex-col items-start w-full px-2 overflow-x-hidden">
+          {/* Home link */}
           <Link
             to="/"
             title="Home"
@@ -109,6 +115,7 @@ export const Sidebar = () => {
             )}
           </Link>
 
+          {/* Discover link */}
           <Link
             to="/discover"
             title="Discover"
@@ -127,6 +134,7 @@ export const Sidebar = () => {
             )}
           </Link>
 
+          {/* Library link (protected) */}
           <a
             href="/library"
             title="Library"
@@ -146,6 +154,7 @@ export const Sidebar = () => {
             )}
           </a>
 
+          {/* Profile link (protected) */}
           <a
             href="/profile"
             title="Profile"
@@ -166,11 +175,12 @@ export const Sidebar = () => {
           </a>
         </nav>
 
-        {/* Bottom Auth Buttons */}
+        {/* Authentication buttons at bottom */}
         <div
           className={`mt-auto mb-6 w-full flex flex-col gap-3 overflow-hidden ${isCollapsed ? "px-2" : "px-6"}`}
         >
           {isAuthenticated ? (
+            // Logout button
             <button
               onClick={handleLogout}
               title="Log Out"
@@ -179,6 +189,7 @@ export const Sidebar = () => {
               {isCollapsed ? <LogOut size={20} /> : "Log Out"}
             </button>
           ) : (
+            // Login and signup buttons
             <>
               <Link
                 to="/login"
@@ -195,7 +206,7 @@ export const Sidebar = () => {
                 {isCollapsed ? <UserPlus size={20} /> : "Sign Up Free"}
               </Link>
             </>
-          )}
+          )}}
         </div>
       </aside>
     </>

@@ -4,7 +4,9 @@ import { X, Plus, ListMusic } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { API_BASE_URL } from "../config";
 
+// Modal component for adding a song to user's playlists
 export const AddToPlaylistModal = ({ song, onClose }) => {
+  // State for playlists and loading
   const [playlists, setPlaylists] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,6 +29,7 @@ export const AddToPlaylistModal = ({ song, onClose }) => {
     fetchPlaylists();
   }, []);
 
+  // Add selected song to playlist
   const handleAdd = async (playlistId) => {
     try {
       const token = localStorage.getItem("token");
@@ -57,7 +60,7 @@ export const AddToPlaylistModal = ({ song, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <div className="bg-[#1e1e1e] rounded-[32px] p-6 w-full max-w-sm border border-[#ffffff1a] shadow-2xl animate-fade-in">
-        {/* Header */}
+        {/* Header with title and close button */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
             <ListMusic className="text-[#4b2bee]" size={24} />
@@ -71,7 +74,7 @@ export const AddToPlaylistModal = ({ song, onClose }) => {
           </button>
         </div>
 
-        {/* Selected Song Preview */}
+        {/* Song preview card */}
         <div className="flex items-center gap-3 mb-6 p-3 bg-[#ffffff0d] rounded-2xl border border-[#ffffff0d]">
           <img
             src={song.image}
@@ -86,7 +89,7 @@ export const AddToPlaylistModal = ({ song, onClose }) => {
           </div>
         </div>
 
-        {/* Playlist List */}
+        {/* Playlist selection list */}
         <div className="space-y-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
           {loading ? (
             <div className="text-center py-4 text-slate-500 text-sm">
@@ -97,6 +100,7 @@ export const AddToPlaylistModal = ({ song, onClose }) => {
               No playlists found. <br /> Create one in your Library first!
             </div>
           ) : (
+            // Display each playlist as a button
             playlists.map((playlist) => (
               <button
                 key={playlist._id}

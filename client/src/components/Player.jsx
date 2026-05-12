@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import { toast } from "react-hot-toast";
 import { usePlayer } from "../context/PlayerContext";
-import { AuthPromptModal } from "./AuthPromptModal"; // IMPORT THE MODAL
+import { AuthPromptModal } from "./AuthPromptModal";
 import { API_BASE_URL } from "../config";
 import {
   Play,
@@ -15,7 +15,9 @@ import {
   Heart,
 } from "lucide-react";
 
+// YouTube music player component with playback controls
 export const Player = () => {
+  // Get player state from context
   const {
     currentSong,
     isPlaying,
@@ -27,21 +29,25 @@ export const Player = () => {
     setIsPlaying,
   } = usePlayer();
 
+  // Playback state
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isReady, setIsReady] = useState(false);
+
+  // Favorites state
   const [isLiked, setIsLiked] = useState(false);
   const [favoritesId, setFavoritesId] = useState(null);
 
-  // --- Auth State & Modal ---
+  // Authentication state
   const isAuthenticated = !!localStorage.getItem("token");
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [authMessage, setAuthMessage] = useState("");
 
+  // Refs
   const playerRef = useRef(null);
   const intervalRef = useRef(null);
 
-  // --- Reset Logic ---
+  // Reset state when song changes
   const [lastSongId, setLastSongId] = useState(currentSong?.id);
 
   if (currentSong?.id !== lastSongId) {
@@ -52,9 +58,9 @@ export const Player = () => {
     setIsLiked(false);
   }
 
-  // 1. Fetch "Favorites" Playlist ID on Mount (Only if Auth)
+  // Fetch favorites playlist ID on mount
   useEffect(() => {
-    if (!isAuthenticated) return; // Skip if guest
+    if (!isAuthenticated) return;
     const fetchFavoritesId = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -70,9 +76,9 @@ export const Player = () => {
     fetchFavoritesId();
   }, [isAuthenticated]);
 
-  // 2. Check if current song is in Favorites
+  // Check if current song is in favorites
   useEffect(() => {
-    if (!isAuthenticated) return; // Skip if guest
+    if (!isAuthenticated) return;
     const checkIfLiked = async () => {
       if (!currentSong || !favoritesId) return;
       try {
@@ -97,7 +103,7 @@ export const Player = () => {
     }
   }, [currentSong?.id, favoritesId, isAuthenticated]);
 
-  // 3. Toggle Like (Protected for Guests)
+  // Add or remove song from favorites
   const toggleLike = async () => {
     if (!isAuthenticated) {
       setAuthMessage("Sign up to save songs and create custom playlists.");
@@ -147,14 +153,14 @@ export const Player = () => {
     }
   };
 
-  // --- 30 SECOND LIMIT LOGIC ADDED HERE ---
+  // Track progress and enforce 30-second limit for guests
   const startProgressTracking = () => {
     if (intervalRef.current) return;
     intervalRef.current = setInterval(() => {
       if (playerRef.current && playerRef.current.getCurrentTime) {
         const currentTime = playerRef.current.getCurrentTime();
 
-        // 🚨 Block Guest after 30 seconds
+        // Enforce 30-second limit for unauthenticated users
         if (!isAuthenticated && currentTime >= 30) {
           playerRef.current.pauseVideo();
           setIsPlaying(false);
@@ -171,6 +177,7 @@ export const Player = () => {
     }, 100);
   };
 
+  // Stop progress tracking interval
   const stopProgressTracking = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -178,6 +185,7 @@ export const Player = () => {
     }
   };
 
+  // Format seconds to MM:SS
   const formatTime = (seconds) => {
     if (!seconds) return "0:00";
     const mins = Math.floor(seconds / 60);
@@ -185,13 +193,14 @@ export const Player = () => {
     return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
   };
 
+  // Handle seek/progress bar clicks with guest limit
   const handleSeek = (e) => {
     if (!isReady || !playerRef.current) return;
     const progressBar = e.currentTarget;
     const clickPosition = e.nativeEvent.offsetX / progressBar.clientWidth;
     let newTime = clickPosition * duration;
 
-    // 🚨 Prevent Guests from seeking past 30 seconds
+    // Prevent guests from seeking past 30 seconds
     if (!isAuthenticated && newTime > 30) {
       newTime = 29;
       setAuthMessage("Sign up to listen to the full track!");
@@ -202,7 +211,7 @@ export const Player = () => {
     setProgress(newTime);
   };
 
-  // ... (Rest of the YouTube init code remains the same)
+  // Initialize YouTube player
   useEffect(() => {
     if (!currentSong) return;
     if (!window.YT) {
